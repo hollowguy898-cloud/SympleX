@@ -7,7 +7,7 @@
 #include "symplex/hardware/hardware_target.h"
 #include "symplex/optimizer/superoptimizer.h"
 #include "symplex/codegen/code_generator.h"
-#include "symplex/distributed/cluster_mesh.h"
+#include "symplex/distributed/mesh.h"
 #include "symplex/distributed/sharding.h"
 #include "symplex/distributed/nccl_bridge.h"
 #include "symplex/distributed/pipeline_overlap.h"

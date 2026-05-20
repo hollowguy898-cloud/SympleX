@@ -203,6 +203,9 @@ public:
             // This is encoded by modifying the coefficients
             // Original: schedule(i) = coeff * i + const
             // Tiled:    schedule(i) = coeff * tile_size * outer_i + coeff * inner_i + const
+            if (band_data_.members[i].coefficients.empty()) {
+                band_data_.members[i].coefficients.resize(n, 0);
+            }
             band_data_.members[i].coefficients[0] = tile_sizes[i];  // Simplified
             inner_band->band_data().members[i].constant = 0;
         }

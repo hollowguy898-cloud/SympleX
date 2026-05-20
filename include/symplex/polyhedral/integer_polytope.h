@@ -378,6 +378,29 @@ public:
         return count;
     }
 
+    /// Best-effort per-dimension bounds extraction.
+    /// Returns [lo, hi] for each dimension. When explicit affine unit
+    /// bounds are absent, conservative fallback values are used.
+    [[nodiscard]] std::vector<std::pair<int64_t, int64_t>> bounds() const {
+        std::vector<std::pair<int64_t, int64_t>> result(ndim_, {0, 0});
+        for (size_t d = 0; d < ndim_; ++d) {
+            int64_t lo = INT64_MIN / 2;
+            int64_t hi = INT64_MAX / 2;
+            for (const auto& ineq : inequalities_) {
+                if (d >= ineq.coefficients.size()) continue;
+                if (ineq.coefficients[d] == 1) {
+                    lo = std::max(lo, -ineq.constant);
+                } else if (ineq.coefficients[d] == -1) {
+                    hi = std::min(hi, ineq.constant);
+                }
+            }
+            if (lo <= INT64_MIN / 4) lo = 0;
+            if (hi >= INT64_MAX / 4) hi = lo;
+            result[d] = {lo, hi};
+        }
+        return result;
+    }
+
     // ── Dimension-wise projection ───────────────────────────────────
 
     /// Project out dimension `dim` via Fourier-Motzkin elimination.

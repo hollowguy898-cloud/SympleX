@@ -113,23 +113,28 @@ endif()
 
 # ── Tests ───────────────────────────────────────────────────────────────
 enable_testing()
-add_executable(symplex_tests
-    tests/test_polytope.cpp
-    tests/test_schedule.cpp
-    tests/test_optimizer.cpp
-    tests/test_codegen.cpp
-    tests/test_distributed.cpp
-    tests/test_fault_tolerance.cpp
+
+set(SYMPLEX_TEST_SOURCES
+    test_polytope
+    test_schedule
+    test_optimizer
+    test_codegen
+    test_distributed
+    test_fault_tolerance
 )
-target_link_libraries(symplex_tests PRIVATE symplex)
-add_test(NAME symplex_tests COMMAND symplex_tests)
+
+foreach(test_name IN LISTS SYMPLEX_TEST_SOURCES)
+    add_executable(${test_name} tests/${test_name}.cpp)
+    target_link_libraries(${test_name} PRIVATE symplex)
+    add_test(NAME ${test_name} COMMAND ${test_name})
+endforeach()
 
 # ── Benchmarks ──────────────────────────────────────────────────────────
-add_executable(symplex_bench
-    benchmarks/bench_optimizer.cpp
-    benchmarks/bench_codegen.cpp
-)
-target_link_libraries(symplex_bench PRIVATE symplex)
+add_executable(bench_optimizer benchmarks/bench_optimizer.cpp)
+target_link_libraries(bench_optimizer PRIVATE symplex)
+
+add_executable(bench_codegen benchmarks/bench_codegen.cpp)
+target_link_libraries(bench_codegen PRIVATE symplex)
 
 # ── Examples ────────────────────────────────────────────────────────────
 add_executable(example_matmul
@@ -137,7 +142,7 @@ add_executable(example_matmul
 )
 target_link_libraries(example_matmul PRIVATE symplex)
 
-install(TARGETS symplex symplex_tests
+install(TARGETS symplex
     ARCHIVE DESTINATION lib
     LIBRARY DESTINATION lib
     RUNTIME DESTINATION bin

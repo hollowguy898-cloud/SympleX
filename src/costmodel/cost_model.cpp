@@ -105,8 +105,10 @@ CostEstimate CostModel::estimate(
             for (size_t i = 0; i < ispace.num_statements(); ++i) {
                 const auto& stmt = ispace.statement(i);
                 // Use the domain to get a rough iteration count
-                total_elements = std::max(total_elements,
-                    static_cast<int64_t>(tile.inner_volume()));
+                int64_t stmt_iters = stmt.domain.count_points();
+                if (stmt_iters > 0) {
+                    total_elements = std::max(total_elements, stmt_iters);
+                }
             }
 
             compute_ops = 2 * total_elements;

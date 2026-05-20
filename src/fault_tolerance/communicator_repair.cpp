@@ -77,7 +77,7 @@ void CommunicatorRepair::build_groups_along_dim(size_t mesh_dim) {
         // fixed coordinates.
         for (int64_t i = 0; i < dim_size; ++i) {
             fixed_coords[mesh_dim] = i;
-            distributed::MeshCoord coord(std::vector<int64_t>(fixed_coords));
+            distributed::MeshCoord coord{std::vector<int64_t>(fixed_coords)};
             try {
                 const auto& dev = mesh_.device_at(coord);
                 if (dev.alive) {

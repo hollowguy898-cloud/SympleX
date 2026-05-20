@@ -91,7 +91,7 @@ AnalyticalEstimate AnalyticalCostModel::estimate_matmul(
     const int64_t ops_per_tile = 2 * tm * tn * tk;
 
     // Total compute ops across the whole GEMM
-    const int64_t total_ops = 2 * M * N * K;
+    const int64_t total_ops = ops_per_tile * total_tiles * num_tiles_k;
 
     // Compute time: total_ops / peak_flops (seconds), then to ns
     const double peak_flops = target_.peak_flops_fp16();  // FLOPS/s

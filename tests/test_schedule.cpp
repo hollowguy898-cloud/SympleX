@@ -52,7 +52,8 @@ int main() {
         assert(!tiles.empty());
         // All tiles should have SRAM footprint within budget
         for (const auto& t : tiles) {
-            assert(t.sram_footprint() <= target.max_sram_bytes + target.max_sram_bytes / 4);  // Allow 25% overhead
+            assert(t.sram_footprint() <= static_cast<size_t>(
+                target.max_sram_bytes + target.max_sram_bytes / 4));  // Allow 25% overhead
         }
         std::cout << "[PASS] Hardware-aligned tile generation (" << tiles.size() << " configs)\n";
     }

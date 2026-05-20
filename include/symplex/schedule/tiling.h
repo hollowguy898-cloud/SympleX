@@ -173,7 +173,8 @@ inline std::vector<TileConfig> generate_hardware_aligned_tiles(
                     size_t footprint = cfg.sram_footprint(
                         3, target.bytes_per_element, true
                     );
-                    if (footprint > target.max_sram_bytes) continue;
+                    if (footprint >
+                        static_cast<size_t>(std::max<int64_t>(0, target.max_sram_bytes))) continue;
 
                     configs.push_back(std::move(cfg));
                 } else if (ndim == 2) {
@@ -182,7 +183,8 @@ inline std::vector<TileConfig> generate_hardware_aligned_tiles(
                     size_t footprint = cfg.sram_footprint(
                         3, target.bytes_per_element, true
                     );
-                    if (footprint > target.max_sram_bytes) continue;
+                    if (footprint >
+                        static_cast<size_t>(std::max<int64_t>(0, target.max_sram_bytes))) continue;
                     configs.push_back(std::move(cfg));
                 }
             }

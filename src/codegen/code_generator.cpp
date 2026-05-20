@@ -196,6 +196,30 @@ GeneratedKernel CodeGenerator::generate_matmul(
     // Validate
     std::string error;
     if (!validate_matmul_tile(M, N, K, tile, error)) {
+        // Best-effort auto-repair: if a user/requested tile is not feasible,
+        // shrink it to a nearby register-feasible Tensor Core aligned tile.
+        auto suggested = reg_alloc_.suggest_reduced_tile(
+            tile.inner_tiles.size() > 0 ? tile.inner_tiles[0] : target_.gpu.tensor_core.m,
+            tile.inner_tiles.size() > 1 ? tile.inner_tiles[1] : target_.gpu.tensor_core.n,
+            tile.inner_tiles.size() > 2 ? tile.inner_tiles[2] : target_.gpu.tensor_core.k
+        );
+        if (suggested.size() == 3) {
+            schedule::TileConfig repaired = tile;
+            repaired.inner_tiles = suggested;
+            if (repaired.outer_tiles.size() >= 3) {
+                repaired.outer_tiles[0] = std::max(repaired.outer_tiles[0], repaired.inner_tiles[0]);
+                repaired.outer_tiles[1] = std::max(repaired.outer_tiles[1], repaired.inner_tiles[1]);
+                repaired.outer_tiles[2] = std::max(repaired.outer_tiles[2], repaired.inner_tiles[2]);
+            } else {
+                repaired.outer_tiles = repaired.inner_tiles;
+            }
+
+            std::string repaired_error;
+            if (validate_matmul_tile(M, N, K, repaired, repaired_error)) {
+                return generate_matmul(M, N, K, repaired);
+            }
+        }
+
         result.valid = false;
         result.error_message = error;
         return result;

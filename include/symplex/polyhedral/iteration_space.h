@@ -230,6 +230,9 @@ public:
                 for (auto ts : tile_sizes) {
                     elements *= static_cast<size_t>(ts);
                 }
+                // Scale by access-map arity when available so this reflects
+                // how many dimensions each access touches.
+                elements *= std::max<size_t>(size_t(1), acc.access_map.n_out());
                 total_elements += elements;
             }
         }

@@ -87,4 +87,15 @@ struct ExtendedTileConfig : schedule::TileConfig {
     }
 };
 
+// Cost-model helper utilities shared across search phases.
+int64_t compute_matmul_ops(int64_t tm, int64_t tn, int64_t tk);
+int64_t compute_matmul_bytes(
+    int64_t tm, int64_t tn, int64_t tk, int64_t bytes_per_element);
+double compute_operational_intensity(
+    int64_t tm, int64_t tn, int64_t tk, int64_t bytes_per_element);
+int64_t estimate_occupancy(
+    const ExtendedTileConfig& cfg, const hardware::HardwareTarget& target);
+double estimate_latency_ns(
+    const ExtendedTileConfig& cfg, const hardware::HardwareTarget& target);
+
 } // namespace symplex::optimizer

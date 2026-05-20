@@ -107,7 +107,7 @@ RecoveryPlan ForwardRecovery::recover(const std::vector<int64_t>& failed_devices
             int64_t alive_in_slice = 0;
             for (int64_t i = 0; i < dim_size; ++i) {
                 fixed_coords[dim] = i;
-                distributed::MeshCoord coord(std::vector<int64_t>(fixed_coords));
+                distributed::MeshCoord coord{std::vector<int64_t>(fixed_coords)};
                 try {
                     const auto& dev = mesh_.device_at(coord);
                     if (dev.alive && failed_set.find(dev.global_id) == failed_set.end()) {

@@ -1,0 +1,145 @@
+cmake_minimum_required(VERSION 3.20)
+project(SympleX
+    VERSION 1.0.0
+    DESCRIPTION "Polyhedral Tensor Superoptimizer for AI Training Acceleration"
+    LANGUAGES CXX
+)
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+# ── Compiler flags ──────────────────────────────────────────────────────
+add_compile_options(
+    -Wall -Wextra -Wpedantic -Wno-unused-parameter
+    -march=native -O3
+    -ffast-math -fno-math-errno
+)
+
+# ── Find dependencies ───────────────────────────────────────────────────
+# ISL (Integer Set Library) for polyhedral operations
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(ISL IMPORTED_TARGET isl)
+
+# nlohmann_json for configuration serialization
+find_package(nlohmann_json 3.9 QUIET)
+
+# Threads
+find_package(Threads REQUIRED)
+
+# CUDA (optional – needed for empirical profiling and PTX emission)
+include(CMakeDependentOption)
+cmake_dependent_option(SYMPLEX_ENABLE_CUDA "Enable CUDA backend" ON "CUDA_FOUND" OFF)
+if(SYMPLEX_ENABLE_CUDA)
+    enable_language(CUDA)
+    find_package(CUDAToolkit REQUIRED)
+endif()
+
+# NCCL (optional – needed for distributed sharding)
+cmake_dependent_option(SYMPLEX_ENABLE_NCCL "Enable NCCL distributed backend" ON "SYMPLEX_ENABLE_CUDA" OFF)
+
+# ── Core library ────────────────────────────────────────────────────────
+set(SYMPLEX_SOURCES
+    src/polyhedral/integer_polytope.cpp
+    src/polyhedral/affine_map.cpp
+    src/polyhedral/dependency.cpp
+    src/polyhedral/iteration_space.cpp
+    src/polyhedral/union_map.cpp
+    src/schedule/schedule_tree.cpp
+    src/schedule/tiling.cpp
+    src/schedule/fusion.cpp
+    src/schedule/parallelization.cpp
+    src/schedule/schedule_map.cpp
+    src/hardware/gpu_topology.cpp
+    src/hardware/tensor_core.cpp
+    src/hardware/memory_hierarchy.cpp
+    src/hardware/hardware_target.cpp
+    src/optimizer/search_phase1.cpp
+    src/optimizer/search_phase2.cpp
+    src/optimizer/search_phase3.cpp
+    src/optimizer/superoptimizer.cpp
+    src/optimizer/tile_config.cpp
+    src/costmodel/roofline.cpp
+    src/costmodel/analytical.cpp
+    src/costmodel/empirical.cpp
+    src/costmodel/cost_model.cpp
+    src/codegen/ptx_emitter.cpp
+    src/codegen/wmma.cpp
+    src/codegen/swizzle.cpp
+    src/codegen/register_allocator.cpp
+    src/codegen/code_generator.cpp
+    src/distributed/mesh.cpp
+    src/distributed/sharding.cpp
+    src/distributed/nccl_bridge.cpp
+    src/distributed/pipeline_overlap.cpp
+    src/fault_tolerance/health_monitor.cpp
+    src/fault_tolerance/forward_recovery.cpp
+    src/fault_tolerance/communicator_repair.cpp
+    src/fault_tolerance/checkpoint.cpp
+    src/training/dynamic_batch.cpp
+    src/training/memory_watchdog.cpp
+    src/training/training_loop.cpp
+    src/training/compiler_pipeline.cpp
+)
+
+add_library(symplex STATIC ${SYMPLEX_SOURCES})
+target_include_directories(symplex PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>
+)
+
+target_link_libraries(symplex PUBLIC
+    Threads::Threads
+)
+
+if(ISL_FOUND)
+    target_link_libraries(symplex PUBLIC PkgConfig::ISL)
+    target_compile_definitions(symplex PUBLIC SYMPLEX_HAS_ISL)
+endif()
+
+if(nlohmann_json_FOUND)
+    target_link_libraries(symplex PUBLIC nlohmann_json::nlohmann_json)
+    target_compile_definitions(symplex PUBLIC SYMPLEX_HAS_NLOHMANN_JSON)
+endif()
+
+if(SYMPLEX_ENABLE_CUDA)
+    target_link_libraries(symplex PUBLIC CUDA::cudart CUDA::cuda_driver)
+    target_compile_definitions(symplex PUBLIC SYMPLEX_ENABLE_CUDA)
+    if(SYMPLEX_ENABLE_NCCL)
+        target_compile_definitions(symplex PUBLIC SYMPLEX_ENABLE_NCCL)
+    endif()
+endif()
+
+# ── Tests ───────────────────────────────────────────────────────────────
+enable_testing()
+add_executable(symplex_tests
+    tests/test_polytope.cpp
+    tests/test_schedule.cpp
+    tests/test_optimizer.cpp
+    tests/test_codegen.cpp
+    tests/test_distributed.cpp
+    tests/test_fault_tolerance.cpp
+)
+target_link_libraries(symplex_tests PRIVATE symplex)
+add_test(NAME symplex_tests COMMAND symplex_tests)
+
+# ── Benchmarks ──────────────────────────────────────────────────────────
+add_executable(symplex_bench
+    benchmarks/bench_optimizer.cpp
+    benchmarks/bench_codegen.cpp
+)
+target_link_libraries(symplex_bench PRIVATE symplex)
+
+# ── Examples ────────────────────────────────────────────────────────────
+add_executable(example_matmul
+    examples/matmul_optimize.cpp
+)
+target_link_libraries(example_matmul PRIVATE symplex)
+
+install(TARGETS symplex symplex_tests
+    ARCHIVE DESTINATION lib
+    LIBRARY DESTINATION lib
+    RUNTIME DESTINATION bin
+)
+install(DIRECTORY include/symplex DESTINATION include)
